@@ -18,6 +18,7 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
+import org.junit.Assert;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -26,6 +27,7 @@ import java.util.*;
 
 public class ModuleGlue
 {
+    private static final long OPEN_RETRY_TIMEOUT = 3 * 60 * 1000;
 
     private IotHubClientProtocol transportFromString(String protocolStr)
     {
@@ -71,7 +73,7 @@ public class ModuleGlue
         try
         {
             ModuleClient client = ModuleClient.createFromEnvironment(protocol);
-            client.open();
+            openClientWithRetry(client);
 
             this._clientCount++;
             String connectionId = "moduleClient_" + this._clientCount;
@@ -81,7 +83,7 @@ public class ModuleGlue
             cr.setConnectionId(connectionId);
             handler.handle(Future.succeededFuture(cr));
         }
-        catch (IOException | ModuleClientException  e)
+        catch (ModuleClientException | InterruptedException e)
         {
             handler.handle(Future.failedFuture(e));
         }
@@ -119,7 +121,8 @@ public class ModuleGlue
             {
                 client.setOption("SetCertificateAuthority", cert);
             }
-            client.open();
+
+            openClientWithRetry(client);
 
             this._clientCount++;
             String connectionId = "moduleClient_" + this._clientCount;
@@ -129,7 +132,7 @@ public class ModuleGlue
             cr.setConnectionId(connectionId);
             handler.handle(Future.succeededFuture(cr));
         }
-        catch (IOException | ModuleClientException | URISyntaxException e)
+        catch (InterruptedException | ModuleClientException | URISyntaxException e)
         {
             handler.handle(Future.failedFuture(e));
         }
@@ -712,5 +715,36 @@ public class ModuleGlue
                 this._closeConnection(key);
             }
         }
+    }
+
+    public static void openClientWithRetry(InternalClient client) throws InterruptedException
+    {
+        //Check again
+        int count =0;
+        boolean clientOpenSucceeded = false;
+        long startTime = System.currentTimeMillis();
+        while (!clientOpenSucceeded)
+        {
+            if (System.currentTimeMillis() - startTime > OPEN_RETRY_TIMEOUT)
+            {
+                Assert.fail("Timed out trying to open the client " + count);
+            }
+
+            try
+            {
+                count++;
+                client.open();
+                clientOpenSucceeded = true;
+            }
+            catch (IOException e)
+            {
+                //ignore and try again
+                System.out.println("Encountered exception while opening device client, retrying...");
+                e.printStackTrace();
+                Thread.sleep(400);
+            }
+        }
+
+        System.out.println("Successfully opened connection!");
     }
 }

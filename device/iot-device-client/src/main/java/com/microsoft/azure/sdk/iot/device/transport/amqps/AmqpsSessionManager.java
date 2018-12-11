@@ -2,13 +2,14 @@ package com.microsoft.azure.sdk.iot.device.transport.amqps;
 
 import com.microsoft.azure.sdk.iot.device.CustomLogger;
 import com.microsoft.azure.sdk.iot.device.DeviceClientConfig;
-import com.microsoft.azure.sdk.iot.device.IotHubConnectionString;
 import com.microsoft.azure.sdk.iot.device.MessageType;
-import com.microsoft.azure.sdk.iot.device.ObjectLock;
 import com.microsoft.azure.sdk.iot.device.exceptions.TransportException;
 import org.apache.qpid.proton.engine.*;
+
 import java.util.ArrayList;
-import java.util.concurrent.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -29,7 +30,7 @@ public class AmqpsSessionManager
 
     private static final int MAX_WAIT_TO_AUTHENTICATE_MS = 10*1000;
 
-    private final ObjectLock openLinksLock = new ObjectLock();
+    private final CountDownLatch openLinksLock = new CountDownLatch(1);
 
     private CustomLogger logger;
 
@@ -186,7 +187,7 @@ public class AmqpsSessionManager
                         try
                         {
                             // Codes_SRS_AMQPSESSIONMANAGER_12_020: [The function shall lock the execution with waitLock.]
-                            this.openLinksLock.waitLock(MAX_WAIT_TO_AUTHENTICATE_MS);
+                            this.openLinksLock.await(MAX_WAIT_TO_AUTHENTICATE_MS, TimeUnit.MILLISECONDS);
                         }
                         catch (InterruptedException e)
                         {
@@ -324,7 +325,7 @@ public class AmqpsSessionManager
                         synchronized (this.openLinksLock)
                         {
                             // Codes_SRS_AMQPSESSIONMANAGER_12_031: [The function shall call authentication isLinkFound if the authentication is not open and return true if both links are open]
-                            this.openLinksLock.notifyLock();
+                            this.openLinksLock.countDown();
                         }
                         break;
                     }
@@ -356,9 +357,6 @@ public class AmqpsSessionManager
      *
      * @param message the message to send.
      * @param messageType the message type to find the sender. 
-     * @param iotHubConnectionString the deviceconnection string to 
-     *                               find the sender.
-     *
      * @return Integer
      */
     Integer sendMessage(org.apache.qpid.proton.message.Message message, MessageType messageType, String deviceId) throws TransportException

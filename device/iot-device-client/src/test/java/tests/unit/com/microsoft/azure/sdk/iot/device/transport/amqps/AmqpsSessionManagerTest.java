@@ -9,6 +9,7 @@ import org.junit.Test;
 
 import javax.net.ssl.SSLContext;
 import java.util.ArrayList;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -38,9 +39,6 @@ public class AmqpsSessionManagerTest
 
     @Mocked
     ScheduledExecutorService mockScheduledExecutorService;
-
-    @Mocked
-    ObjectLock mockObjectLock;
 
     @Mocked
     Session mockSession;
@@ -300,7 +298,7 @@ public class AmqpsSessionManagerTest
 
     // Tests_SRS_AMQPSESSIONMANAGER_12_021: [The function shall throw TransportException if the lock throws.]
     @Test (expected = TransportException.class)
-    public void openDeviceOperationLinksLockThrows() throws IllegalArgumentException, InterruptedException, TransportException
+    public void openDeviceOperationLinksLockThrows(@Mocked final CountDownLatch mockedCountDownLatch) throws IllegalArgumentException, InterruptedException, TransportException
     {
         // arrange
         final AmqpsSessionManager amqpsSessionManager = new AmqpsSessionManager(mockDeviceClientConfig, mockScheduledExecutorService);
@@ -311,12 +309,12 @@ public class AmqpsSessionManagerTest
         sessionList.add(mockAmqpsSessionDeviceOperation);
         sessionList.add(mockAmqpsSessionDeviceOperation1);
         Deencapsulation.setField(amqpsSessionManager, "amqpsDeviceSessionList", sessionList);
-        Deencapsulation.setField(amqpsSessionManager, "openLinksLock", mockObjectLock);
+        Deencapsulation.setField(amqpsSessionManager, "openLinksLock", mockedCountDownLatch);
 
         new NonStrictExpectations()
         {
             {
-                mockObjectLock.waitLock(anyLong);
+                mockedCountDownLatch.await(anyLong, (TimeUnit) any);
                 result = new InterruptedException();
             }
         };
@@ -328,7 +326,7 @@ public class AmqpsSessionManagerTest
     // Tests_SRS_AMQPSESSIONMANAGER_12_019: [The function shall call openLinks on all session list members.]
     // Tests_SRS_AMQPSESSIONMANAGER_12_020: [The function shall lock the execution with waitLock.]
     @Test
-    public void openDeviceOperationLinksSuccess() throws IllegalArgumentException, InterruptedException, TransportException
+    public void openDeviceOperationLinksSuccess(@Mocked final CountDownLatch mockedCountDownLatch) throws IllegalArgumentException, InterruptedException, TransportException
     {
         // arrange
         final AmqpsSessionManager amqpsSessionManager = new AmqpsSessionManager(mockDeviceClientConfig, mockScheduledExecutorService);
@@ -339,7 +337,7 @@ public class AmqpsSessionManagerTest
         sessionList.add(mockAmqpsSessionDeviceOperation);
         sessionList.add(mockAmqpsSessionDeviceOperation1);
         Deencapsulation.setField(amqpsSessionManager, "amqpsDeviceSessionList", sessionList);
-        Deencapsulation.setField(amqpsSessionManager, "openLinksLock", mockObjectLock);
+        Deencapsulation.setField(amqpsSessionManager, "openLinksLock", new CountDownLatch(1));
 
         new NonStrictExpectations()
         {
@@ -360,7 +358,7 @@ public class AmqpsSessionManagerTest
                 times = 1;
                 Deencapsulation.invoke(mockAmqpsSessionDeviceOperation1, "openLinks", mockSession);
                 times = 1;
-                mockObjectLock.waitLock(anyLong);
+                mockedCountDownLatch.await(anyLong, (TimeUnit) any);
                 times = 2;
             }
         };
@@ -627,7 +625,7 @@ public class AmqpsSessionManagerTest
 
     // Tests_SRS_AMQPSESSIONMANAGER_12_031: [The function shall call all all device session's isLinkFound, and if both links are opened notify the lock.]
     @Test
-    public void onLinkRemoteOpenNotify() throws IllegalArgumentException, InterruptedException, TransportException
+    public void onLinkRemoteOpenNotify(@Mocked final CountDownLatch mockedCountDownLatch) throws IllegalArgumentException, InterruptedException, TransportException
     {
         // arrange
         final String linkName = "linkName";
@@ -639,7 +637,7 @@ public class AmqpsSessionManagerTest
         sessionList.add(mockAmqpsSessionDeviceOperation1);
         Deencapsulation.setField(amqpsSessionManager, "amqpsDeviceSessionList", sessionList);
 
-        Deencapsulation.setField(amqpsSessionManager, "openLinksLock", mockObjectLock);
+        Deencapsulation.setField(amqpsSessionManager, "openLinksLock", new CountDownLatch(1));
 
         new Expectations()
         {
@@ -671,7 +669,7 @@ public class AmqpsSessionManagerTest
         new Verifications()
         {
             {
-                mockObjectLock.notifyLock();
+                mockedCountDownLatch.countDown();
                 times = 1;
             }
         };
@@ -1171,3 +1169,4 @@ public class AmqpsSessionManagerTest
         };
     }
 }
+
