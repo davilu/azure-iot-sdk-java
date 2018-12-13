@@ -1431,9 +1431,9 @@ public class IotHubTransportTest
     }
 
     //Tests_SRS_IOTHUBTRANSPORT_34_055: [If an exception is thrown while acknowledging the received message,
-    // this function shall add the received message back into the receivedMessagesQueue and then rethrow the exception.]
+    // this function shall add the received message back into the receivedMessagesQueue if the exception was retryable, and then rethrow the exception.]
     @Test
-    public void acknowledgeReceivedMessageReQueuesFailedMessages() throws TransportException
+    public void acknowledgeReceivedMessageReQueuesFailedMessagesIfRetryable() throws TransportException
     {
         //arrange
         IotHubTransport transport = new IotHubTransport(mockedConfig);
@@ -1453,6 +1453,9 @@ public class IotHubTransportTest
 
                 mockedIotHubTransportConnection.sendMessageResult(mockedTransportMessage, IotHubMessageResult.COMPLETE);
                 result = mockedTransportException;
+
+                mockedTransportException.isRetryable();
+                result = true;
             }
         };
 
@@ -1472,6 +1475,53 @@ public class IotHubTransportTest
         assertTrue(exceptionRethrown);
         Queue<IotHubTransportMessage> receivedMessagesQueue = Deencapsulation.getField(transport, "receivedMessagesQueue");
         assertEquals(1, receivedMessagesQueue.size());
+    }
+
+    //Tests_SRS_IOTHUBTRANSPORT_34_055: [If an exception is thrown while acknowledging the received message,
+    // this function shall add the received message back into the receivedMessagesQueue if the exception was retryable, and then rethrow the exception.]
+    @Test
+    public void acknowledgeReceivedMessageDoesNotReQueuesFailedMessagesIfNotRetryable() throws TransportException
+    {
+        //arrange
+        IotHubTransport transport = new IotHubTransport(mockedConfig);
+        final Object context = new Object();
+        Deencapsulation.setField(transport, "iotHubTransportConnection", mockedIotHubTransportConnection);
+        new Expectations()
+        {
+            {
+                mockedTransportMessage.getMessageCallback();
+                result = mockedMessageCallback;
+
+                mockedTransportMessage.getMessageCallbackContext();
+                result = context;
+
+                mockedMessageCallback.execute(mockedTransportMessage, context);
+                result = IotHubMessageResult.COMPLETE;
+
+                mockedIotHubTransportConnection.sendMessageResult(mockedTransportMessage, IotHubMessageResult.COMPLETE);
+                result = mockedTransportException;
+
+                mockedTransportException.isRetryable();
+                result = false;
+            }
+        };
+
+        boolean exceptionRethrown = false;
+
+        //act
+        try
+        {
+            Deencapsulation.invoke(transport, "acknowledgeReceivedMessage", mockedTransportMessage);
+        }
+        catch (Exception e)
+        {
+            exceptionRethrown = true;
+        }
+
+        //assert
+        assertTrue(exceptionRethrown);
+        Queue<IotHubTransportMessage> receivedMessagesQueue = Deencapsulation.getField(transport, "receivedMessagesQueue");
+        assertEquals(0, receivedMessagesQueue.size());
     }
 
     //Tests_SRS_IOTHUBTRANSPORT_34_056: [If the saved http transport connection can receive a message, add it to receivedMessagesQueue.]

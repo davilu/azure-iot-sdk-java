@@ -553,8 +553,12 @@ public class IotHubTransport implements IotHubListener
             catch (TransportException e)
             {
                 //Codes_SRS_IOTHUBTRANSPORT_34_055: [If an exception is thrown while acknowledging the received message,
-                // this function shall add the received message back into the receivedMessagesQueue and then rethrow the exception.]
-                this.receivedMessagesQueue.add(receivedMessage);
+                // this function shall add the received message back into the receivedMessagesQueue if the exception was retryable, and then rethrow the exception.]
+                if (e.isRetryable())
+                {
+                    this.receivedMessagesQueue.add(receivedMessage);
+                }
+
                 throw e;
             }
         }
