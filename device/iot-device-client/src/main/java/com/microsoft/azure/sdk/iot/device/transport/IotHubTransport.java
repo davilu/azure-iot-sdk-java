@@ -623,35 +623,38 @@ public class IotHubTransport implements IotHubListener
      */
     private void openConnection() throws TransportException
     {
-        switch (defaultConfig.getProtocol())
+        if (this.iotHubTransportConnection == null)
         {
-            case HTTPS:
-                //Codes_SRS_IOTHUBTRANSPORT_34_035: [If the default config's protocol is HTTPS, this function shall set
-                // this object's iotHubTransportConnection to a new HttpsIotHubConnection object.]
-                this.iotHubTransportConnection = new HttpsIotHubConnection(defaultConfig);
-                break;
-            case MQTT:
-            case MQTT_WS:
-                //Codes_SRS_IOTHUBTRANSPORT_34_036: [If the default config's protocol is MQTT or MQTT_WS, this function
-                // shall set this object's iotHubTransportConnection to a new MqttIotHubConnection object.]
-                this.iotHubTransportConnection = new MqttIotHubConnection(defaultConfig);
-                break;
-            case AMQPS:
-            case AMQPS_WS:
-                if (scheduledExecutorService == null)
-                {
-                    scheduledExecutorService = Executors.newScheduledThreadPool(POOL_SIZE);
-                }
-                //Codes_SRS_IOTHUBTRANSPORT_34_037: [If the default config's protocol is AMQPS or AMQPS_WS, this
-                // function shall set this object's iotHubTransportConnection to a new AmqpsIotHubConnection object.]
-                this.iotHubTransportConnection = new AmqpsIotHubConnection(defaultConfig, scheduledExecutorService);
-                break;
-            default:
-                throw new TransportException("Protocol not supported");
-        }
+            switch (defaultConfig.getProtocol())
+            {
+                case HTTPS:
+                    //Codes_SRS_IOTHUBTRANSPORT_34_035: [If the default config's protocol is HTTPS, this function shall set
+                    // this object's iotHubTransportConnection to a new HttpsIotHubConnection object.]
+                    this.iotHubTransportConnection = new HttpsIotHubConnection(defaultConfig);
+                    break;
+                case MQTT:
+                case MQTT_WS:
+                    //Codes_SRS_IOTHUBTRANSPORT_34_036: [If the default config's protocol is MQTT or MQTT_WS, this function
+                    // shall set this object's iotHubTransportConnection to a new MqttIotHubConnection object.]
+                    this.iotHubTransportConnection = new MqttIotHubConnection(defaultConfig);
+                    break;
+                case AMQPS:
+                case AMQPS_WS:
+                    if (scheduledExecutorService == null)
+                    {
+                        scheduledExecutorService = Executors.newScheduledThreadPool(POOL_SIZE);
+                    }
+                    //Codes_SRS_IOTHUBTRANSPORT_34_037: [If the default config's protocol is AMQPS or AMQPS_WS, this
+                    // function shall set this object's iotHubTransportConnection to a new AmqpsIotHubConnection object.]
+                    this.iotHubTransportConnection = new AmqpsIotHubConnection(defaultConfig, scheduledExecutorService);
+                    break;
+                default:
+                    throw new TransportException("Protocol not supported");
+            }
 
-        //Codes_SRS_IOTHUBTRANSPORT_34_038: [This function shall set this object as the listener of the iotHubTransportConnection object.]
-        this.iotHubTransportConnection.setListener(this);
+            //Codes_SRS_IOTHUBTRANSPORT_34_038: [This function shall set this object as the listener of the iotHubTransportConnection object.]
+            this.iotHubTransportConnection.setListener(this);
+        }
 
         //Codes_SRS_IOTHUBTRANSPORT_34_039: [This function shall open the iotHubTransportConnection object with the saved list of configs.]
         this.iotHubTransportConnection.open(this.deviceClientConfigs);

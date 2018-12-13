@@ -141,9 +141,6 @@ public final class AmqpsIotHubConnection extends BaseHandler implements IotHubTr
         this.state = IotHubConnectionStatus.DISCONNECTED;
 
         logger.LogInfo("AmqpsIotHubConnection object is created successfully using port %s in %s method ", useWebSockets ? AMQP_WEB_SOCKET_PORT : AMQP_PORT, logger.getMethodName());
-
-        // Codes_SRS_AMQPSIOTHUBCONNECTION_12_001: [The constructor shall initialize the AmqpsSessionManager member variable with the given config.]
-        this.amqpsSessionManager = new AmqpsSessionManager(this.deviceClientConfig, Executors.newScheduledThreadPool(2));
     }
 
     /**
@@ -178,6 +175,13 @@ public final class AmqpsIotHubConnection extends BaseHandler implements IotHubTr
     public void open(Queue<DeviceClientConfig> deviceClientConfigs) throws TransportException
     {
         logger.LogDebug("Entered in method %s", logger.getMethodName());
+
+        this.closeLatch = new CountDownLatch(1);
+        this.openLatch = new CountDownLatch(1);
+        this.savedException = null;
+
+        // Codes_SRS_AMQPSIOTHUBCONNECTION_12_001: [The constructor shall initialize the AmqpsSessionManager member variable with the given config.]
+        this.amqpsSessionManager = new AmqpsSessionManager(this.deviceClientConfig, Executors.newScheduledThreadPool(2));
 
         // Codes_SRS_AMQPSIOTHUBCONNECTION_15_007: [If the AMQPS connection is already open, the function shall do nothing.]
         if(this.state == IotHubConnectionStatus.DISCONNECTED)
