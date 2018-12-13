@@ -9,6 +9,7 @@ import com.microsoft.appcenter.espresso.Factory;
 import com.microsoft.appcenter.espresso.ReportHelper;
 import com.microsoft.azure.sdk.iot.android.BuildConfig;
 import com.microsoft.azure.sdk.iot.android.helper.Rerun;
+import com.microsoft.azure.sdk.iot.android.helper.TestGroupC;
 import com.microsoft.azure.sdk.iot.common.helpers.ClientType;
 import com.microsoft.azure.sdk.iot.common.tests.iothubservices.errorinjection.GetTwinErrInjTests;
 import com.microsoft.azure.sdk.iot.deps.util.Base64;
@@ -25,6 +26,7 @@ import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.util.Collection;
 
+@TestGroupC
 @RunWith(Parameterized.class)
 public class GetTwinErrInjDeviceAndroidRunner extends GetTwinErrInjTests
 {
