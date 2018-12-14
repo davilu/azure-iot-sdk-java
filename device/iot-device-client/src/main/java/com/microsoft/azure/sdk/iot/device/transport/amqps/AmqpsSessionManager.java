@@ -30,7 +30,7 @@ public class AmqpsSessionManager
 
     private static final int MAX_WAIT_TO_AUTHENTICATE_MS = 10*1000;
 
-    private final CountDownLatch openLinksLock = new CountDownLatch(1);
+    private CountDownLatch openLinksLock;
 
     private CustomLogger logger;
 
@@ -172,6 +172,8 @@ public class AmqpsSessionManager
     {
         logger.LogDebug("Entered in method %s", logger.getMethodName());
 
+        openLinksLock = new CountDownLatch(this.amqpsDeviceSessionList.size());
+
         // Codes_SRS_AMQPSESSIONMANAGER_12_018: [The function shall do nothing if the session is not open.]
         if (this.session != null)
         {
@@ -182,18 +184,15 @@ public class AmqpsSessionManager
                     // Codes_SRS_AMQPSESSIONMANAGER_12_019: [The function shall call openLinks on all session list members.]
                     this.amqpsDeviceSessionList.get(i).openLinks(this.session);
 
-                    synchronized (this.openLinksLock)
+                    try
                     {
-                        try
-                        {
-                            // Codes_SRS_AMQPSESSIONMANAGER_12_020: [The function shall lock the execution with waitLock.]
-                            this.openLinksLock.await(MAX_WAIT_TO_AUTHENTICATE_MS, TimeUnit.MILLISECONDS);
-                        }
-                        catch (InterruptedException e)
-                        {
-                            // Codes_SRS_AMQPSESSIONMANAGER_12_021: [The function shall throw TransportException if the lock throws.]
-                            throw new TransportException("Waited too long for the connection to onConnectionInit.");
-                        }
+                        // Codes_SRS_AMQPSESSIONMANAGER_12_020: [The function shall lock the execution with waitLock.]
+                        this.openLinksLock.await(MAX_WAIT_TO_AUTHENTICATE_MS, TimeUnit.MILLISECONDS);
+                    }
+                    catch (InterruptedException e)
+                    {
+                        // Codes_SRS_AMQPSESSIONMANAGER_12_021: [The function shall throw TransportException if the lock throws.]
+                        throw new TransportException("Waited too long for the connection to onConnectionInit.");
                     }
                 }
             }
@@ -322,11 +321,8 @@ public class AmqpsSessionManager
                 {
                     if (this.amqpsDeviceSessionList.get(i).operationLinksOpened())
                     {
-                        synchronized (this.openLinksLock)
-                        {
-                            // Codes_SRS_AMQPSESSIONMANAGER_12_031: [The function shall call authentication isLinkFound if the authentication is not open and return true if both links are open]
-                            this.openLinksLock.countDown();
-                        }
+                        // Codes_SRS_AMQPSESSIONMANAGER_12_031: [The function shall call authentication isLinkFound if the authentication is not open and return true if both links are open]
+                        this.openLinksLock.countDown();
                         break;
                     }
                 }
