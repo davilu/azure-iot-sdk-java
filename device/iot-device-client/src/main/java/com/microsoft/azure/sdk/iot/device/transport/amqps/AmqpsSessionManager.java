@@ -2,9 +2,7 @@ package com.microsoft.azure.sdk.iot.device.transport.amqps;
 
 import com.microsoft.azure.sdk.iot.device.CustomLogger;
 import com.microsoft.azure.sdk.iot.device.DeviceClientConfig;
-import com.microsoft.azure.sdk.iot.device.IotHubConnectionString;
 import com.microsoft.azure.sdk.iot.device.MessageType;
-import com.microsoft.azure.sdk.iot.device.ObjectLock;
 import com.microsoft.azure.sdk.iot.device.exceptions.TransportException;
 import org.apache.qpid.proton.engine.*;
 import java.util.ArrayList;
@@ -29,7 +27,7 @@ public class AmqpsSessionManager
 
     private static final int MAX_WAIT_TO_AUTHENTICATE_MS = 10*1000;
 
-    private final ObjectLock openLinksLock = new ObjectLock();
+    private CountDownLatch sessionsOpeningLatch;
 
     private CustomLogger logger;
 
@@ -97,6 +95,7 @@ public class AmqpsSessionManager
         // Codes_SRS_AMQPSESSIONMANAGER_12_009: [The function shall create a new  AmqpsSessionDeviceOperation with the given deviceClietnConfig and add it to the session list.]
         AmqpsSessionDeviceOperation amqpsSessionDeviceOperation = new AmqpsSessionDeviceOperation(deviceClientConfig, this.amqpsDeviceAuthentication);
         this.amqpsDeviceSessionList.add(amqpsSessionDeviceOperation);
+        sessionsOpeningLatch = new CountDownLatch(this.amqpsDeviceSessionList.size());
     }
 
     /**
@@ -167,9 +166,11 @@ public class AmqpsSessionManager
      *
      * @throws TransportException if open lock throws.
      */
-    public void openDeviceOperationLinks() throws TransportException
+    public void openSessions() throws TransportException
     {
         logger.LogDebug("Entered in method %s", logger.getMethodName());
+
+        sessionsOpeningLatch = new CountDownLatch(this.amqpsDeviceSessionList.size());
 
         // Codes_SRS_AMQPSESSIONMANAGER_12_018: [The function shall do nothing if the session is not open.]
         if (this.session != null)
@@ -181,18 +182,15 @@ public class AmqpsSessionManager
                     // Codes_SRS_AMQPSESSIONMANAGER_12_019: [The function shall call openLinks on all session list members.]
                     this.amqpsDeviceSessionList.get(i).openLinks(this.session);
 
-                    synchronized (this.openLinksLock)
+                    try
                     {
-                        try
-                        {
-                            // Codes_SRS_AMQPSESSIONMANAGER_12_020: [The function shall lock the execution with waitLock.]
-                            this.openLinksLock.waitLock(MAX_WAIT_TO_AUTHENTICATE_MS);
-                        }
-                        catch (InterruptedException e)
-                        {
-                            // Codes_SRS_AMQPSESSIONMANAGER_12_021: [The function shall throw TransportException if the lock throws.]
-                            throw new TransportException("Waited too long for the connection to onConnectionInit.");
-                        }
+                        // Codes_SRS_AMQPSESSIONMANAGER_12_020: [The function shall lock the execution with waitLock.]
+                        this.sessionsOpeningLatch.await(MAX_WAIT_TO_AUTHENTICATE_MS, TimeUnit.MILLISECONDS);
+                    }
+                    catch (InterruptedException e)
+                    {
+                        // Codes_SRS_AMQPSESSIONMANAGER_12_021: [The function shall throw TransportException if the lock throws.]
+                        throw new TransportException("Waited too long for the connection to onConnectionInit.");
                     }
                 }
             }
@@ -321,11 +319,8 @@ public class AmqpsSessionManager
                 {
                     if (this.amqpsDeviceSessionList.get(i).operationLinksOpened())
                     {
-                        synchronized (this.openLinksLock)
-                        {
-                            // Codes_SRS_AMQPSESSIONMANAGER_12_031: [The function shall call authentication isLinkFound if the authentication is not open and return true if both links are open]
-                            this.openLinksLock.notifyLock();
-                        }
+                        // Codes_SRS_AMQPSESSIONMANAGER_12_031: [The function shall call authentication isLinkFound if the authentication is not open and return true if both links are open]
+                        this.sessionsOpeningLatch.countDown();
                         break;
                     }
                 }
@@ -355,9 +350,7 @@ public class AmqpsSessionManager
      * object by message type and deviceId (connection string). 
      *
      * @param message the message to send.
-     * @param messageType the message type to find the sender. 
-     * @param iotHubConnectionString the deviceconnection string to 
-     *                               find the sender.
+     * @param messageType the message type to find the sender.
      *
      * @return Integer
      */

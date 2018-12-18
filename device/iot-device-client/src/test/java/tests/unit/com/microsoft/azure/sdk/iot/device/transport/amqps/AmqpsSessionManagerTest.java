@@ -9,6 +9,7 @@ import org.junit.Test;
 
 import javax.net.ssl.SSLContext;
 import java.util.ArrayList;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -40,7 +41,7 @@ public class AmqpsSessionManagerTest
     ScheduledExecutorService mockScheduledExecutorService;
 
     @Mocked
-    ObjectLock mockObjectLock;
+    CountDownLatch mockCountdownLatch;
 
     @Mocked
     Session mockSession;
@@ -295,7 +296,7 @@ public class AmqpsSessionManagerTest
         Deencapsulation.setField(amqpsSessionManager, "session", null);
 
         // act
-        Deencapsulation.invoke(amqpsSessionManager, "openDeviceOperationLinks");
+        Deencapsulation.invoke(amqpsSessionManager, "openSessions");
     }
 
     // Tests_SRS_AMQPSESSIONMANAGER_12_021: [The function shall throw TransportException if the lock throws.]
@@ -311,18 +312,18 @@ public class AmqpsSessionManagerTest
         sessionList.add(mockAmqpsSessionDeviceOperation);
         sessionList.add(mockAmqpsSessionDeviceOperation1);
         Deencapsulation.setField(amqpsSessionManager, "amqpsDeviceSessionList", sessionList);
-        Deencapsulation.setField(amqpsSessionManager, "openLinksLock", mockObjectLock);
+        Deencapsulation.setField(amqpsSessionManager, "sessionsOpeningLatch", mockCountdownLatch);
 
         new NonStrictExpectations()
         {
             {
-                mockObjectLock.waitLock(anyLong);
+                mockCountdownLatch.await(anyLong, TimeUnit.MILLISECONDS);
                 result = new InterruptedException();
             }
         };
 
         // act
-        Deencapsulation.invoke(amqpsSessionManager, "openDeviceOperationLinks");
+        Deencapsulation.invoke(amqpsSessionManager, "openSessions");
     }
 
     // Tests_SRS_AMQPSESSIONMANAGER_12_019: [The function shall call openLinks on all session list members.]
@@ -339,7 +340,7 @@ public class AmqpsSessionManagerTest
         sessionList.add(mockAmqpsSessionDeviceOperation);
         sessionList.add(mockAmqpsSessionDeviceOperation1);
         Deencapsulation.setField(amqpsSessionManager, "amqpsDeviceSessionList", sessionList);
-        Deencapsulation.setField(amqpsSessionManager, "openLinksLock", mockObjectLock);
+        Deencapsulation.setField(amqpsSessionManager, "sessionsOpeningLatch", mockCountdownLatch);
 
         new NonStrictExpectations()
         {
@@ -350,7 +351,7 @@ public class AmqpsSessionManagerTest
         };
 
         // act
-        Deencapsulation.invoke(amqpsSessionManager, "openDeviceOperationLinks");
+        Deencapsulation.invoke(amqpsSessionManager, "openSessions");
 
         // assert
         new Verifications()
@@ -360,7 +361,7 @@ public class AmqpsSessionManagerTest
                 times = 1;
                 Deencapsulation.invoke(mockAmqpsSessionDeviceOperation1, "openLinks", mockSession);
                 times = 1;
-                mockObjectLock.waitLock(anyLong);
+                mockCountdownLatch.await(anyLong, TimeUnit.MILLISECONDS);
                 times = 2;
             }
         };
@@ -639,7 +640,7 @@ public class AmqpsSessionManagerTest
         sessionList.add(mockAmqpsSessionDeviceOperation1);
         Deencapsulation.setField(amqpsSessionManager, "amqpsDeviceSessionList", sessionList);
 
-        Deencapsulation.setField(amqpsSessionManager, "openLinksLock", mockObjectLock);
+        Deencapsulation.setField(amqpsSessionManager, "sessionsOpeningLatch", mockCountdownLatch);
 
         new Expectations()
         {
@@ -671,7 +672,7 @@ public class AmqpsSessionManagerTest
         new Verifications()
         {
             {
-                mockObjectLock.notifyLock();
+                mockCountdownLatch.countDown();
                 times = 1;
             }
         };

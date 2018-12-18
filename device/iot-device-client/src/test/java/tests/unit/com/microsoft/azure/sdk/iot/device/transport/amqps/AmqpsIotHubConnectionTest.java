@@ -552,7 +552,7 @@ public class AmqpsIotHubConnectionTest {
                 Deencapsulation.invoke(mockAmqpsSessionManager, "isAuthenticationOpened");
                 result = true;
 
-                mockAmqpsSessionManager.openDeviceOperationLinks();
+                mockAmqpsSessionManager.openSessions();
 
                 Deencapsulation.invoke(mockAmqpsSessionManager, "isAuthenticationOpened");
                 result = true;
@@ -600,7 +600,7 @@ public class AmqpsIotHubConnectionTest {
                 Deencapsulation.invoke(mockAmqpsSessionManager, "isAuthenticationOpened");
                 result = true;
 
-                mockAmqpsSessionManager.openDeviceOperationLinks();
+                mockAmqpsSessionManager.openSessions();
             }
         };
 
@@ -806,13 +806,13 @@ public class AmqpsIotHubConnectionTest {
             {
                 Deencapsulation.invoke(mockAmqpsSessionManager, "isAuthenticationOpened");
                 times = 1;
-                Deencapsulation.invoke(mockAmqpsSessionManager, "openDeviceOperationLinks");
+                Deencapsulation.invoke(mockAmqpsSessionManager, "openSessions");
                 times = 0;
             }
         };
     }
 
-    // Tests_SRS_AMQPSIOTHUBCONNECTION_12_023: [The function shall call AmqpsSessionManager.openDeviceOperationLinks.]
+    // Tests_SRS_AMQPSIOTHUBCONNECTION_12_023: [The function shall call AmqpsSessionManager.openSessions.]
     @Test
     public void openLinksSuccess() throws TransportException
     {
@@ -839,7 +839,7 @@ public class AmqpsIotHubConnectionTest {
             {
                 Deencapsulation.invoke(mockAmqpsSessionManager, "isAuthenticationOpened");
                 times = 1;
-                Deencapsulation.invoke(mockAmqpsSessionManager, "openDeviceOperationLinks");
+                Deencapsulation.invoke(mockAmqpsSessionManager, "openSessions");
                 times = 1;
             }
         };
@@ -2287,7 +2287,7 @@ public class AmqpsIotHubConnectionTest {
                 Deencapsulation.invoke(mockAmqpsSessionManager, "isAuthenticationOpened");
                 result = true;
 
-                mockAmqpsSessionManager.openDeviceOperationLinks();
+                mockAmqpsSessionManager.openSessions();
 
                 Deencapsulation.invoke(mockAmqpsSessionManager, "isAuthenticationOpened");
                 result = false;
@@ -2325,7 +2325,7 @@ public class AmqpsIotHubConnectionTest {
                 Deencapsulation.invoke(mockAmqpsSessionManager, "isAuthenticationOpened");
                 result = true;
 
-                mockAmqpsSessionManager.openDeviceOperationLinks();
+                mockAmqpsSessionManager.openSessions();
 
                 Deencapsulation.invoke(mockAmqpsSessionManager, "isAuthenticationOpened");
                 result = true;

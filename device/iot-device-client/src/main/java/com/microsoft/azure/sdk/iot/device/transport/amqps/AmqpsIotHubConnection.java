@@ -293,8 +293,8 @@ public final class AmqpsIotHubConnection extends BaseHandler implements IotHubTr
         // Codes_SRS_AMQPSIOTHUBCONNECTION_12_022: [The function shall do nothing if the authentication is already open.]
         if (this.amqpsSessionManager.isAuthenticationOpened())
         {
-            // Codes_SRS_AMQPSIOTHUBCONNECTION_12_023: [The function shall call AmqpsSessionManager.openDeviceOperationLinks.]
-            this.amqpsSessionManager.openDeviceOperationLinks();
+            // Codes_SRS_AMQPSIOTHUBCONNECTION_12_023: [The function shall call AmqpsSessionManager.openSessions.]
+            this.amqpsSessionManager.openSessions();
         }
 
         logger.LogDebug("Exited from method %s", logger.getMethodName());
