@@ -186,7 +186,7 @@ public class AmqpsSessionManager
 
             try
             {
-                // Codes_SRS_AMQPSESSIONMANAGER_12_020: [The function shall lock the execution with waitLock.]
+                // Codes_SRS_AMQPSESSIONMANAGER_12_020: [The function wait until all sessions have opened.]
                 this.sessionsOpeningLatch.await(MAX_WAIT_TO_AUTHENTICATE_MS, TimeUnit.MILLISECONDS);
             }
             catch (InterruptedException e)

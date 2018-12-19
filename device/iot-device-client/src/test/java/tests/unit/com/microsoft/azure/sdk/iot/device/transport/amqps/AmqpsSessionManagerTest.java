@@ -327,7 +327,7 @@ public class AmqpsSessionManagerTest
     }
 
     // Tests_SRS_AMQPSESSIONMANAGER_12_019: [The function shall call openLinks on all session list members.]
-    // Tests_SRS_AMQPSESSIONMANAGER_12_020: [The function shall lock the execution with waitLock.]
+    // Tests_SRS_AMQPSESSIONMANAGER_12_020: [The function wait until all sessions have opened.]
     @Test
     public void openDeviceOperationLinksSuccess() throws IllegalArgumentException, InterruptedException, TransportException
     {
