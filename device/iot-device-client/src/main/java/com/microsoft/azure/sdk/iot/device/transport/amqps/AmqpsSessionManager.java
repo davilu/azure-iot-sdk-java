@@ -181,18 +181,18 @@ public class AmqpsSessionManager
                 {
                     // Codes_SRS_AMQPSESSIONMANAGER_12_019: [The function shall call openLinks on all session list members.]
                     this.amqpsDeviceSessionList.get(i).openLinks(this.session);
-
-                    try
-                    {
-                        // Codes_SRS_AMQPSESSIONMANAGER_12_020: [The function shall lock the execution with waitLock.]
-                        this.sessionsOpeningLatch.await(MAX_WAIT_TO_AUTHENTICATE_MS, TimeUnit.MILLISECONDS);
-                    }
-                    catch (InterruptedException e)
-                    {
-                        // Codes_SRS_AMQPSESSIONMANAGER_12_021: [The function shall throw TransportException if the lock throws.]
-                        throw new TransportException("Waited too long for the connection to onConnectionInit.");
-                    }
                 }
+            }
+
+            try
+            {
+                // Codes_SRS_AMQPSESSIONMANAGER_12_020: [The function shall lock the execution with waitLock.]
+                this.sessionsOpeningLatch.await(MAX_WAIT_TO_AUTHENTICATE_MS, TimeUnit.MILLISECONDS);
+            }
+            catch (InterruptedException e)
+            {
+                // Codes_SRS_AMQPSESSIONMANAGER_12_021: [The function shall throw TransportException if the lock throws.]
+                throw new TransportException("Waited too long for the connection to onConnectionInit.");
             }
         }
 

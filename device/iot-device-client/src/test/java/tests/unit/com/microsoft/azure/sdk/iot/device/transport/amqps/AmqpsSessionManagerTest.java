@@ -362,7 +362,7 @@ public class AmqpsSessionManagerTest
                 Deencapsulation.invoke(mockAmqpsSessionDeviceOperation1, "openLinks", mockSession);
                 times = 1;
                 mockCountdownLatch.await(anyLong, TimeUnit.MILLISECONDS);
-                times = 2;
+                times = 1;
             }
         };
     }
